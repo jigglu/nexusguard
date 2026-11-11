@@ -65,6 +65,8 @@ _pipeline_result: dict | None = None
 # ── Routes ──────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
+@app.get("/api/index.py", response_class=HTMLResponse)
 async def landing():
     """Serve the public Web3 startup landing page."""
     no_cache = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"}

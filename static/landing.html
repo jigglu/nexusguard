@@ -82,6 +82,8 @@
         .marquee-track { display: flex; gap: 3rem; animation: marquee 30s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
+        html, body { max-width: 100vw; overflow-x: hidden; }
+
         /* Section observer */
         .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
         .reveal.visible { opacity: 1; transform: translateY(0); }
@@ -97,15 +99,15 @@
      ══════════════════════════════════════════════════════════════════ -->
 <nav id="navbar" class="fixed top-0 inset-x-0 z-50 transition-all duration-300" style="border-bottom: 1px solid transparent;">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
+        <div class="flex items-center justify-between h-16 gap-2">
             <!-- Logo -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
                 <div class="relative">
-                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/20">N</div>
+                    <div class="w-8 sm:w-9 h-8 sm:h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center text-xs sm:text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/20">N</div>
                     <div class="absolute -inset-1 rounded-xl bg-cyan-400/20 blur-sm -z-10 animate-glow-pulse"></div>
                 </div>
-                <span class="text-white font-bold text-lg tracking-tight">NexusGuard</span>
-                <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">v1.0-mainnet-ready</span>
+                <span class="text-white font-bold text-base sm:text-lg tracking-tight whitespace-nowrap">NexusGuard</span>
+                <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">v1.0-mainnet-ready</span>
             </div>
             <!-- Center Nav (Desktop) -->
             <div class="hidden lg:flex items-center gap-8">
@@ -116,12 +118,12 @@
                 <a href="#tracks" class="text-sm text-slate-400 hover:text-white transition-colors">Tracks</a>
             </div>
             <!-- Right -->
-            <div class="flex items-center gap-3">
-                <a href="https://github.com" target="_blank" class="hidden sm:flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <a href="https://github.com/jigglu/nexusguard" target="_blank" class="hidden sm:flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 hover:text-white transition-colors">
                     <i data-lucide="github" class="w-4 h-4"></i> GitHub
                 </a>
-                <a href="/app" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-emerald-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-200 hover:scale-[1.02]">
-                    Launch Mission Control <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                <a href="/app" class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-emerald-400 text-slate-950 text-xs sm:text-sm font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-200 hover:scale-[1.02] whitespace-nowrap">
+                    <span class="hidden sm:inline">Launch </span>Mission Control <i data-lucide="arrow-right" class="w-3.5 sm:w-4 h-3.5 sm:h-4"></i>
                 </a>
             </div>
         </div>
@@ -441,9 +443,9 @@
                     <p class="text-red-400">$ python main.py --attack-demo</p>
                 </div>
                 <div>
-                    <p class="text-slate-500 text-xs mb-1.5"># Run all 52 automated tests</p>
+                    <p class="text-slate-500 text-xs mb-1.5"># Run all 54 automated tests</p>
                     <p class="text-cyan-400">$ pytest tests/ -v</p>
-                    <p class="text-emerald-400/60 mt-1">======================== <span class="text-emerald-400 font-bold">52 passed</span> in 48.78s ========================</p>
+                    <p class="text-emerald-400/60 mt-1">======================== <span class="text-emerald-400 font-bold">54 passed</span> in 7.15s ========================</p>
                 </div>
                 <div>
                     <p class="text-slate-500 text-xs mb-1.5"># Launch Mission Control UI</p>
@@ -456,7 +458,7 @@
         <!-- Stats row -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 reveal">
             <div class="glass rounded-xl p-4 text-center">
-                <p class="text-2xl font-black text-white">52</p>
+                <p class="text-2xl font-black text-white">54</p>
                 <p class="text-xs text-slate-500 mt-1">Passing Tests</p>
             </div>
             <div class="glass rounded-xl p-4 text-center">
