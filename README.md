@@ -1,11 +1,27 @@
 # 🛡️ NexusGuard: Autonomous General-Contractor Studio, Security Swarm & Cross-Chain Bounty Protocol on NEAR
 
+[![Live Portal](https://img.shields.io/badge/Live%20Portal-Vercel-cyan.svg)](https://nexusguard-five.vercel.app)
+[![Mission Control](https://img.shields.io/badge/Mission%20Control-Live%20App-emerald.svg)](https://nexusguard-five.vercel.app/app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-cyan.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![NEAR Protocol](https://img.shields.io/badge/NEAR-Protocol-green.svg)](https://near.org)
+[![Tests Passing](https://img.shields.io/badge/Tests-54%2F54%20Passing-brightgreen.svg)](#-testing)
 [![Dry-Run Safe](https://img.shields.io/badge/Mode-Dry--Run%20Safe-orange.svg)](#dry-run-mode)
 
 > **A multi-agent AI studio that autonomously decomposes software projects, negotiates with specialist providers on [market.near.ai](https://market.near.ai), defends against prompt-injection attacks, and settles cross-chain payments via NEAR Intents—all governed by a policy-bound wallet that never touches a FullAccess key.**
+
+---
+
+## 🌐 Live Cloud Deployment (Vercel)
+
+| Service | Direct Link | Description |
+| :--- | :--- | :--- |
+| **Public Landing Portal** | [https://nexusguard-five.vercel.app](https://nexusguard-five.vercel.app) | Dark-mode Web3 startup landing portal with live interactive terminal |
+| **Mission Control Console** | [https://nexusguard-five.vercel.app/app](https://nexusguard-five.vercel.app/app) | Real-time multi-agent orchestrator, NEAR Testnet block monitor & threat matrix |
+| **System Health API** | [`/api/health`](https://nexusguard-five.vercel.app/api/health) | Uptime & health check endpoint |
+| **Wallet Policy & Keys API** | [`/api/policy`](https://nexusguard-five.vercel.app/api/policy) | Live scoped FunctionCall Access Key & NEAR Testnet RPC status |
+| **Settlement Receipts API** | [`/api/receipts`](https://nexusguard-five.vercel.app/api/receipts) | NEAR Intents 1Click cryptographic receipts |
+| **Accounting Ledger Export** | [`/api/ledger.csv`](https://nexusguard-five.vercel.app/api/ledger.csv) | Downloadable accountant CSV audit trail |
 
 ---
 
@@ -71,7 +87,7 @@ python main.py --dry-run --json | python -m json.tool
 ```bash
 pytest tests/ -v
 ```
-**→ See:** 40+ tests covering policy blocks, negotiation outcomes, attack defense, 1Click receipts, and all API endpoints.
+**→ See:** 54 passing tests covering policy blocks, negotiation outcomes, attack defense, 1Click receipts, serverless ASGI routing, and all API endpoints.
 
 #### 6. Launch the Web Dashboard
 ```bash
@@ -174,13 +190,19 @@ Outputs:
 
 ```
 .
-├── README.md                        # This file
+├── README.md                        # Project documentation & live links
 ├── LICENSE                          # MIT License
 ├── .gitignore
 ├── .env.example                     # Template for API keys (optional)
 ├── requirements.txt                 # Python dependencies
+├── vercel.json                      # Vercel serverless deployment config
+├── Dockerfile                       # Container deployment config (Railway / Fly.io)
+├── render.yaml                      # Render Blueprint deployment config
+├── Procfile                         # Standard cloud web process runner
 ├── main.py                          # Rich CLI runner (--dry-run, --attack-demo)
-├── server.py                        # FastAPI backend + Mission Control UI
+├── server.py                        # FastAPI backend + Mission Control UI + ASGI normalizer
+├── api/
+│   └── index.py                     # Vercel serverless entrypoint
 ├── src/
 │   ├── __init__.py
 │   ├── wallet_policy.py             # Function-Call Access Key & policy engine
@@ -193,9 +215,10 @@ Outputs:
 │       ├── agent_market.py          # market.near.ai probe & disclosure
 │       └── near_intents.py          # 1Click API cross-chain adapter
 ├── static/
-│   └── index.html                   # Tailwind Mission Control dashboard
+│   ├── landing.html                 # Dark-mode Web3 startup landing portal
+│   └── index.html                   # High-contrast Mission Control dashboard
 └── tests/
-    └── test_nexus_suite.py          # 40+ pytest tests
+    └── test_nexus_suite.py          # 54 automated pytest tests
 ```
 
 ---

@@ -112,15 +112,12 @@ app.add_middleware(VercelPathNormalizerMiddleware)
 
 @app.exception_handler(404)
 async def custom_404_handler(request: Request, exc):
-    """Debug 404 handler that reveals the exact ASGI path and query received."""
+    """Clean JSON 404 handler for unmatched routes."""
     return JSONResponse(
         status_code=404,
         content={
             "detail": "Not Found",
-            "scope_path": request.scope.get("path"),
-            "scope_query": request.scope.get("query_string", b"").decode("utf-8"),
-            "x_matched_path": request.headers.get("x-matched-path"),
-            "x_invoke_path": request.headers.get("x-invoke-path"),
+            "path": request.scope.get("path"),
         },
     )
 
