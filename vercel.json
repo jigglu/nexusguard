@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/:path*",
-      "destination": "/api/index?path=:path*"
+      "destination": "/api/index"
     }
   ]
 }

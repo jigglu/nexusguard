@@ -37,7 +37,7 @@ class VercelPathNormalizer:
 
             # 1. Check query param from rewrites (e.g. ?path=app or ?__path=app)
             path_param = params.get("__path") or params.get("path")
-            if path_param and path_param[0] and path_param[0] != "$1":
+            if path_param and path_param[0] and not (path_param[0].startswith(":") or path_param[0] == "$1"):
                 path = "/" + path_param[0].lstrip("/")
                 if "__path" in params:
                     del params["__path"]
