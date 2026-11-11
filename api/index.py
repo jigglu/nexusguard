@@ -1,8 +1,7 @@
 """
-Vercel Serverless Function Handler for NexusGuard FastAPI backend.
-Routes all sub-paths (/, /app, /api/health, /api/pipeline/run, etc.)
-accurately using the __path query parameter populated by Vercel rewrites.
-Also supports HEAD requests cleanly for uptime checks and crawlers.
+Vercel Serverless Function entrypoint for NexusGuard FastAPI backend.
+Normalizes routing for all deployment topologies (Vercel rewrites, routes,
+reverse-proxies, subpath queries, and HEAD requests).
 """
 
 import sys
@@ -17,52 +16,62 @@ if str(root_dir) not in sys.path:
 from server import app as fastapi_app
 
 
-async def app(scope, receive, send):
+class VercelPathNormalizer:
     """
-    ASGI entrypoint for Vercel.
-    Extracts the original request path from __path query param or fallback headers.
+    ASGI middleware ensuring all incoming requests route to the intended
+    FastAPI endpoints regardless of Vercel serverless prefixing or rewrites.
     """
-    if scope.get("type") == "http":
-        # Gracefully handle HEAD requests
-        is_head = scope.get("method") == "HEAD"
-        if is_head:
-            scope["method"] = "GET"
 
-        # 1. Check if __path was passed via Vercel rewrite
-        qs = scope.get("query_string", b"").decode("utf-8")
-        params = urllib.parse.parse_qs(qs, keep_blank_values=True)
+    def __init__(self, asgi_app):
+        self.asgi_app = asgi_app
 
-        if "__path" in params:
-            raw_path = params["__path"][0]
-            target_path = "/" + raw_path.lstrip("/")
-            scope["path"] = target_path
-            scope["raw_path"] = target_path.encode("utf-8")
-            del params["__path"]
-            scope["query_string"] = urllib.parse.urlencode(params, doseq=True).encode("utf-8")
-        else:
-            # Fallback: check headers or strip /api/index prefix
-            headers = dict(scope.get("headers", []))
-            matched = headers.get(b"x-matched-path") or headers.get(b"x-invoke-path")
-            if matched:
-                orig = matched.decode("utf-8").split("?")[0]
-                if orig and not (orig.startswith("/api/index") or orig.startswith("/api/index.py")):
-                    scope["path"] = orig
-                    scope["raw_path"] = orig.encode("utf-8")
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            is_head = scope.get("method") == "HEAD"
+            if is_head:
+                scope["method"] = "GET"
+
+            path = scope.get("path", "")
+            qs = scope.get("query_string", b"").decode("utf-8")
+            params = urllib.parse.parse_qs(qs, keep_blank_values=True)
+
+            # 1. Check query param from rewrites (e.g. ?path=app or ?__path=app)
+            path_param = params.get("__path") or params.get("path")
+            if path_param and path_param[0] and path_param[0] != "$1":
+                path = "/" + path_param[0].lstrip("/")
+                if "__path" in params:
+                    del params["__path"]
+                if "path" in params:
+                    del params["path"]
+                scope["query_string"] = urllib.parse.urlencode(params, doseq=True).encode("utf-8")
             else:
-                path = scope.get("path", "")
-                for prefix in ["/api/index.py", "/api/index", "/api.py"]:
-                    if path.startswith(prefix):
-                        path = path[len(prefix):] or "/"
-                        break
-                scope["path"] = path
-                scope["raw_path"] = path.encode("utf-8")
+                # 2. Check Vercel edge proxy headers
+                headers = dict(scope.get("headers", []))
+                matched = headers.get(b"x-matched-path") or headers.get(b"x-invoke-path")
+                if matched:
+                    orig = matched.decode("utf-8").split("?")[0]
+                    if orig and not any(orig.startswith(p) for p in ["/api/index.py", "/api/index"]):
+                        path = orig
 
-        if is_head:
-            async def head_send(message):
-                if message.get("type") == "http.response.body":
-                    message = {"type": "http.response.body", "body": b"", "more_body": False}
-                await send(message)
-            await fastapi_app(scope, receive, head_send)
-            return
+            # 3. Strip any /api/index serverless prefixes
+            for prefix in ["/api/index.py", "/api/index", "/api.py"]:
+                if path.startswith(prefix):
+                    path = path[len(prefix):] or "/"
+                    break
 
-    await fastapi_app(scope, receive, send)
+            scope["path"] = path
+            scope["raw_path"] = path.encode("utf-8")
+
+            if is_head:
+                async def head_send(message):
+                    if message.get("type") == "http.response.body":
+                        message = {"type": "http.response.body", "body": b"", "more_body": False}
+                    await send(message)
+                await self.asgi_app(scope, receive, head_send)
+                return
+
+        await self.asgi_app(scope, receive, send)
+
+
+# Export standard `app` for Vercel discovery
+app = VercelPathNormalizer(fastapi_app)
