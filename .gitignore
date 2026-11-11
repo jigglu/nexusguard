@@ -1,0 +1,16 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+submission_payload.json
+receipts.json
+accounting_ledger.csv
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+recordings/
+.build_assets/
+*.mp4

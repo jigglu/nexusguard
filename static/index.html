@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusGuard — Mission Control</title>
+    <meta name="description" content="NexusGuard Mission Control: Autonomous General Contractor Studio, Security Swarm & Cross-Chain Bounty Protocol on NEAR.">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+                    },
+                    colors: {
+                        brand: {
+                            cyan: '#06B6D4',
+                            emerald: '#10B981',
+                            purple: '#8B5CF6',
+                            rose: '#F43F5E',
+                            amber: '#F59E0B',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow-pulse': 'glowPulse 2.5s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'shimmer': 'shimmer 2.5s linear infinite',
+                    },
+                    keyframes: {
+                        glowPulse: {
+                            '0%, 100%': { opacity: '0.4' },
+                            '50%': { opacity: '0.85' }
+                        },
+                        slideUp: {
+                            from: { opacity: '0', transform: 'translateY(14px)' },
+                            to: { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        fadeIn: {
+                            from: { opacity: '0' },
+                            to: { opacity: '1' }
+                        },
+                        shimmer: {
+                            from: { backgroundPosition: '200% 0' },
+                            to: { backgroundPosition: '-200% 0' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        :root {
+            --bg-base: #06080F;
+            --surface-glass: rgba(13, 19, 32, 0.78);
+            --surface-glass-border: rgba(255, 255, 255, 0.08);
+            --surface-card: rgba(17, 26, 46, 0.68);
+        }
+
+        body {
+            background-color: var(--bg-base);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: #E2E8F0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+
+        /* Ambient Lighting Mesh */
+        .ambient-glow-mesh {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: -10;
+            background: 
+                radial-gradient(900px circle at 15% 10%, rgba(6, 182, 212, 0.10) 0%, transparent 60%),
+                radial-gradient(850px circle at 85% 15%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+                radial-gradient(600px circle at 50% 85%, rgba(16, 185, 129, 0.06) 0%, transparent 60%);
+        }
+
+        /* Tier-1 Web3 Startup Glassmorphism */
+        .glass-panel {
+            background: var(--surface-glass);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--surface-glass-border);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+        }
+
+        .glass-card {
+            background: var(--surface-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(6, 182, 212, 0.35);
+            box-shadow: 0 12px 32px -10px rgba(6, 182, 212, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transform: translateY(-1px);
+        }
+
+        /* Gradient Borders */
+        .gradient-border-cyan {
+            border: 1px solid transparent;
+            background: linear-gradient(var(--surface-glass), var(--surface-glass)) padding-box,
+                        linear-gradient(135deg, rgba(6, 182, 212, 0.45), rgba(16, 185, 129, 0.25), rgba(255, 255, 255, 0.06)) border-box;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(6, 8, 15, 0.8); }
+        ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.7); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.9); }
+
+        /* Status Dot */
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-ok { background: #10B981; box-shadow: 0 0 10px #10B981; }
+        .status-blocked { background: #EF4444; box-shadow: 0 0 10px #EF4444; }
+        .status-pending { background: #F59E0B; box-shadow: 0 0 10px #F59E0B; }
+
+        .slide-in { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Tab Active States */
+        .view-tab-btn.active {
+            background: rgba(6, 182, 212, 0.15);
+            color: #22D3EE;
+            border-color: rgba(6, 182, 212, 0.4);
+            box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.25);
+        }
+    </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden">
+    <!-- Ambient Background Lighting -->
+    <div class="ambient-glow-mesh"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TOP NAVIGATION & WALLET TELEMETRY BAR (CLEAN WEB3 HEADER)
+         ══════════════════════════════════════════════════════════════════ -->
+    <header class="border-b border-white/[0.08] bg-[#06080F]/90 backdrop-blur-2xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                <!-- Left: Brand -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <a href="/" class="flex items-center gap-2.5 group">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center text-xs font-black text-slate-950 shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+                            N
+                        </div>
+                        <span class="text-white font-extrabold text-base tracking-tight whitespace-nowrap">NexusGuard</span>
+                    </a>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 whitespace-nowrap">Mission Control</span>
+                </div>
+
+                <!-- Center: Clean Navigation (Desktop XL only, never wraps) -->
+                <nav class="hidden xl:flex items-center gap-6 text-xs font-medium text-slate-400 shrink-0">
+                    <a href="#command-center" class="hover:text-cyan-400 transition-colors whitespace-nowrap">Contractor Studio</a>
+                    <a href="#settlements-section" class="hover:text-cyan-400 transition-colors whitespace-nowrap">1Click Settlements</a>
+                    <a href="#attack-section-anchor" onclick="document.getElementById('attack-section').style.display='block'" class="hover:text-cyan-400 transition-colors whitespace-nowrap">Security Swarm</a>
+                    <a href="/api/ledger.csv" class="hover:text-cyan-400 transition-colors whitespace-nowrap">Ledger Export</a>
+                </nav>
+
+                <!-- Right: Unified Web3 Capsule & Navigation -->
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <!-- Unified Web3 Agent & Telemetry Capsule -->
+                    <div class="flex items-center rounded-xl bg-[#0B101D] border border-white/[0.08] text-xs font-mono shadow-sm px-2.5 py-1.5 gap-2">
+                        <!-- Status indicator -->
+                        <div class="flex items-center gap-1.5 pr-2.5 border-r border-white/[0.08] shrink-0">
+                            <span class="status-dot status-ok shrink-0" id="status-dot"></span>
+                            <span class="text-slate-300 font-sans text-[11px] font-semibold whitespace-nowrap" id="status-text">Ready</span>
+                        </div>
+
+                        <!-- Scoped Agent Account -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-cyan-400 shrink-0"></i>
+                            <span class="text-slate-200 font-semibold text-[11px] whitespace-nowrap">nexusguard.testnet</span>
+                            <span class="hidden sm:inline-flex px-1.5 py-0.5 rounded text-[9px] bg-cyan-500/15 text-cyan-300 font-bold whitespace-nowrap">Scoped</span>
+                            <span class="hidden md:inline-flex px-1.5 py-0.5 rounded text-[9px] bg-amber-500/15 text-amber-300 font-mono font-bold whitespace-nowrap">Dry-Run Safe</span>
+                        </div>
+
+                        <!-- RPC Block Height -->
+                        <div class="hidden lg:flex items-center pl-2.5 border-l border-white/[0.08] text-slate-400 text-[10px] shrink-0 whitespace-nowrap">
+                            <span class="text-emerald-400/90 font-bold whitespace-nowrap" id="rpc-pill">Block #277,091,943</span>
+                        </div>
+                    </div>
+
+                    <!-- Return to Landing Page -->
+                    <a href="/" class="px-3 py-1.5 rounded-xl glass-card text-slate-400 hover:text-white hover:border-cyan-500/30 transition-all flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0 whitespace-nowrap" title="Back to Landing Page">
+                        <i data-lucide="arrow-left" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span class="hidden sm:inline whitespace-nowrap">Landing</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- ══════════════════════════════════════════════════════════════
+             EXECUTIVE TELEMETRY METRIC STRIP (4 INSTITUTIONAL CARDS)
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <!-- Card 1 -->
+            <div class="glass-card rounded-2xl p-4 relative overflow-hidden group">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                    <span class="flex items-center gap-1.5 font-medium">
+                        <i data-lucide="key-round" class="w-4 h-4 text-cyan-400"></i>
+                        Access Key Custody
+                    </span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">NEP-141</span>
+                </div>
+                <div class="text-lg sm:text-xl font-bold text-white tracking-tight">FunctionCall Only</div>
+                <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>FullAccess keys permanently disabled</span>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="glass-card rounded-2xl p-4 relative overflow-hidden group">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                    <span class="flex items-center gap-1.5 font-medium">
+                        <i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-400"></i>
+                        Treasury Policy Cap
+                    </span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" id="badge-policy-cap">$25.00 Cap</span>
+                </div>
+                <div class="text-lg sm:text-xl font-bold text-white tracking-tight font-mono" id="metric-budget-spend">$11.20 / $25.00</div>
+                <div class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1.5 font-semibold">
+                    <i data-lucide="trending-down" class="w-3.5 h-3.5"></i>
+                    <span id="metric-savings-note">$13.80 Saved (55% efficiency)</span>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="glass-card rounded-2xl p-4 relative overflow-hidden group">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                    <span class="flex items-center gap-1.5 font-medium">
+                        <i data-lucide="arrow-left-right" class="w-4 h-4 text-purple-400"></i>
+                        Cross-Chain Settlement
+                    </span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20">1Click Live</span>
+                </div>
+                <div class="text-lg sm:text-xl font-bold text-white tracking-tight">NEAR ➔ Base L2</div>
+                <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                    <span>Chaindefuser 1Click Rails</span>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="glass-card rounded-2xl p-4 relative overflow-hidden group">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                    <span class="flex items-center gap-1.5 font-medium">
+                        <i data-lucide="shield-alert" class="w-4 h-4 text-rose-400"></i>
+                        Security Swarm Shield
+                    </span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Guarded</span>
+                </div>
+                <div class="text-lg sm:text-xl font-bold text-white tracking-tight" id="metric-incidents">0 Incidents Allowed</div>
+                <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    <span>12 Prompt-Injection Signatures</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             AUTONOMOUS GENERAL CONTRACTOR COMMAND STUDIO (MAIN MODULE)
+             ══════════════════════════════════════════════════════════════ -->
+        <div id="command-center" class="glass-panel gradient-border-cyan rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
+            <!-- Top bar -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-md shadow-cyan-500/10">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                            <span>Autonomous General Contractor Studio</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">AI Manager</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>DRY-RUN SAFE</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Type any custom specification and budget. The Manager AI decomposes tasks, executes 1-round negotiations, and verifies deliverables in safe dry-run mode.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
+                    <span class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                        <i data-lucide="command" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span>+ Enter to run</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Task Spec Textarea -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <label for="task-spec" class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                        <i data-lucide="terminal" class="w-4 h-4 text-cyan-400"></i>
+                        <span>Project Specification Prompt</span>
+                    </label>
+                    <span class="text-[11px] text-slate-500">Edit prompt freely or choose a quick preset</span>
+                </div>
+                <div class="relative">
+                    <textarea id="task-spec" rows="3"
+                        class="w-full bg-[#070B14]/95 border border-white/[0.09] focus:border-cyan-400 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-all font-sans leading-relaxed shadow-inner"
+                        placeholder="e.g. Build an autonomous cross-chain arbitrage trading bot between NEAR Ref Finance and Base Aerodrome...">Build a NEAR NEP-141 escrow smart contract with fund_escrow, release_escrow, cancel_escrow methods. Include a full security audit (static analysis, reentrancy checks) and UI/UX review with invoice validation. Total budget: $25.00 USDC.</textarea>
+                </div>
+            </div>
+
+            <!-- Presets & Budget Configuration -->
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pt-3 border-t border-white/[0.06]">
+                <!-- Preset Buttons -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-slate-400 font-medium mr-1 flex items-center gap-1">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+                        Presets:
+                    </span>
+                    <button type="button" onclick="setPreset('arbitrage')"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]">
+                        <span>⚡ Arbitrage Bot</span>
+                        <span class="text-cyan-400/70 font-mono">($35)</span>
+                    </button>
+                    <button type="button" onclick="setPreset('nft')"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]">
+                        <span>🎮 NFT Game Economy</span>
+                        <span class="text-purple-400/70 font-mono">($50)</span>
+                    </button>
+                    <button type="button" onclick="setPreset('vault')"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]">
+                        <span>🛡️ DeFi Yield Vault</span>
+                        <span class="text-emerald-400/70 font-mono">($40)</span>
+                    </button>
+                    <button type="button" onclick="setPreset('default')"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]">
+                        <span>🔄 Canonical NEP-141</span>
+                        <span class="text-slate-400 font-mono">($25)</span>
+                    </button>
+                </div>
+
+                <!-- Budget Input with Currency Pill -->
+                <div class="flex items-center gap-3 shrink-0 w-full lg:w-auto justify-end">
+                    <label for="task-budget" class="text-xs font-bold text-slate-300 whitespace-nowrap flex items-center gap-1.5">
+                        <i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Budget Cap:</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs font-bold">$</span>
+                        <input id="task-budget" type="number" min="5" max="1000" step="1" value="25.00" oninput="updateBudgetPreview(this.value)"
+                            class="w-32 bg-[#070B14] border border-white/[0.12] focus:border-cyan-400 rounded-xl pl-8 pr-12 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:ring-2 focus:ring-cyan-400/20 shadow-inner" />
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-mono font-bold">USDC</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Projected Budget Split Bar -->
+            <div class="mt-4 pt-3 border-t border-white/[0.04] space-y-2">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span class="flex items-center gap-1.5 font-semibold text-slate-300">
+                        <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        Autonomous Allocation Architecture
+                    </span>
+                    <span class="font-mono text-slate-400" id="allocation-split-summary">0% Self · 30% Audit Swarm · 20% QA Bounty · 50% Reserve</span>
+                </div>
+                <!-- Interactive Split Bar -->
+                <div class="w-full bg-[#070B14] rounded-full h-2.5 overflow-hidden flex p-0.5 border border-white/[0.06]">
+                    <div class="bg-cyan-400 h-full rounded-l-full" style="width: 5%;" title="TASK-01: Core Architecture ($0.00 in-house)"></div>
+                    <div class="bg-purple-500 h-full" style="width: 30%;" title="TASK-02: Security Audit Swarm (~30%)"></div>
+                    <div class="bg-amber-400 h-full" style="width: 20%;" title="TASK-03: Cross-Chain QA Bounty (~20%)"></div>
+                    <div class="bg-emerald-500 h-full rounded-r-full" style="width: 45%;" title="Treasury Reserve / Realized Savings (~50%)"></div>
+                </div>
+                <div class="flex flex-wrap items-center justify-between text-[11px] text-slate-400 pt-0.5 font-mono">
+                    <span class="flex items-center gap-1.5 text-cyan-300"><span class="w-2 h-2 rounded-full bg-cyan-400"></span>TASK-01: In-House ($0.00)</span>
+                    <span class="flex items-center gap-1.5 text-purple-300" id="hint-task2"><span class="w-2 h-2 rounded-full bg-purple-500"></span>TASK-02: Audit Swarm (~$7.50)</span>
+                    <span class="flex items-center gap-1.5 text-amber-300" id="hint-task3"><span class="w-2 h-2 rounded-full bg-amber-400"></span>TASK-03: Cross-Chain QA (~$5.00)</span>
+                    <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Treasury Reserve</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             ACTION CONTROLS BAR (POWERHOUSE CTAS)
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Primary Action: Run Pipeline -->
+                <button onclick="runPipeline()" id="btn-pipeline"
+                    class="px-6 py-3 bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black rounded-2xl text-sm transition-all duration-200 shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.01] active:scale-[0.99] flex items-center gap-2.5 cursor-pointer">
+                    <i data-lucide="play" class="w-4 h-4 fill-slate-950"></i>
+                    <span>Execute Autonomous Pipeline (Dry-Run ⌘↵)</span>
+                </button>
+
+                <!-- Attack Simulation -->
+                <button onclick="runAttackDemo()" id="btn-attack"
+                    class="px-5 py-3 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold rounded-2xl text-sm transition-all duration-200 shadow-xl shadow-rose-500/25 hover:shadow-rose-500/40 hover:scale-[1.01] active:scale-[0.99] flex items-center gap-2 cursor-pointer">
+                    <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                    <span>Simulate Attack &amp; Drain</span>
+                </button>
+
+                <!-- View Policy -->
+                <button onclick="loadPolicy()" id="btn-policy"
+                    class="px-4 py-3 glass-card text-slate-300 hover:text-white rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 cursor-pointer">
+                    <i data-lucide="key" class="w-4 h-4 text-cyan-400"></i>
+                    <span>Wallet Policy</span>
+                </button>
+
+                <!-- Market Disclosure -->
+                <button onclick="loadDisclosure()" id="btn-disclosure"
+                    class="px-4 py-3 glass-card text-slate-300 hover:text-white rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 cursor-pointer">
+                    <i data-lucide="file-text" class="w-4 h-4 text-purple-400"></i>
+                    <span>Market Disclosure</span>
+                </button>
+            </div>
+
+            <!-- Download Ledger CSV -->
+            <a href="/api/ledger.csv" download="nexusguard_accounting_ledger.csv"
+                class="px-4 py-3 glass-card text-emerald-400 hover:text-emerald-300 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 border-emerald-500/30 hover:border-emerald-500/60 shadow-lg shadow-emerald-500/10">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download Accounting Ledger (CSV)</span>
+            </a>
+        </div>
+
+        <!-- Real-Time Pipeline Stepper (Visible during execution) -->
+        <div id="pipeline-stepper" class="glass-panel rounded-2xl p-4 hidden border-cyan-500/40 slide-in">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-300 mb-2">
+                <span class="flex items-center gap-2 text-cyan-400 font-bold">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    <span>General Contractor Pipeline Live Execution...</span>
+                </span>
+                <span id="step-percentage" class="font-mono text-cyan-400 font-bold text-sm">0%</span>
+            </div>
+            <div class="w-full bg-[#070B14] rounded-full h-2 overflow-hidden border border-white/[0.04]">
+                <div id="step-bar" class="bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 h-2 rounded-full transition-all duration-300 w-0"></div>
+            </div>
+            <div class="grid grid-cols-5 gap-2 mt-3 text-[11px] font-mono text-center">
+                <span id="step-1" class="text-slate-500">1. Key Policy</span>
+                <span id="step-2" class="text-slate-500">2. Decompose</span>
+                <span id="step-3" class="text-slate-500">3. 1-Round Bargain</span>
+                <span id="step-4" class="text-slate-500">4. QA Verification</span>
+                <span id="step-5" class="text-slate-500">5. 1Click Settlement</span>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             FINAL DELIVERED OUTPUT SHOWCASE (THE WORKBENCH)
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="glass-panel rounded-3xl p-5 sm:p-7 shadow-2xl border-emerald-500/30" id="delivered-section" style="display:none;">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/[0.08]">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+                        <i data-lucide="package-check" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white uppercase tracking-wide flex items-center gap-2.5">
+                            <span>Final Delivered Output &amp; Verification</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">QA VERIFIED &amp; SETTLED</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">All deliverables verified against cryptographic hashes, unit tests passed, and cross-chain receipts confirmed</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2" id="delivered-stats-pill">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <div id="delivered-content" class="space-y-4"></div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             CROSS-CHAIN SETTLEMENT RECEIPTS TABLE (1CLICK RAILS)
+             ══════════════════════════════════════════════════════════════ -->
+        <div id="settlements-section" class="glass-panel rounded-3xl p-5 sm:p-7 shadow-xl">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-md shadow-purple-500/10">
+                        <i data-lucide="receipt" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white uppercase tracking-wide">Cross-Chain Settlement Receipts</h3>
+                        <p class="text-xs text-slate-400">Verifiable settlement receipts minted via NEAR Intents 1Click rails (USDC settled on Base L2)</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 rounded-xl text-xs font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 text-purple-400"></i>
+                        <span>1CLICK v0 API ACTIVE</span>
+                    </span>
+                </div>
+            </div>
+
+            <div id="settlements-content" class="overflow-x-auto">
+                <div class="text-center py-10 text-slate-500 text-xs">
+                    <i data-lucide="layers" class="w-8 h-8 mx-auto mb-2.5 text-slate-600"></i>
+                    <p class="font-medium text-slate-400">No active settlements generated yet.</p>
+                    <p class="text-[11px] text-slate-500 mt-1">Execute the pipeline above to trigger autonomous task procurement and settlements.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             CORE OPERATIONAL CARDS (3-COLUMN PROTOCOL GRID)
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <!-- 1. Wallet Policy Card -->
+            <div class="glass-panel rounded-3xl p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                                <i data-lucide="lock" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Wallet Policy</h3>
+                                <p class="text-[11px] text-slate-400">Scoped FunctionCall Bounds</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">ENFORCED</span>
+                    </div>
+
+                    <div id="policy-content" class="text-xs text-slate-300 space-y-2.5">
+                        <p class="text-slate-500 italic">Click "Wallet Policy" or execute the pipeline to load cryptographic constraints.</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                    <span>Engine: OutLayer / Agent-API</span>
+                    <span class="text-emerald-400 font-bold">Hard Bound</span>
+                </div>
+            </div>
+
+            <!-- 2. Task Decomposition Card -->
+            <div class="glass-panel rounded-3xl p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                <i data-lucide="git-pull-request" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Decomposition</h3>
+                                <p class="text-[11px] text-slate-400">Build-vs-Buy Task Taxonomy</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25" id="tasks-badge">PLANNED</span>
+                    </div>
+
+                    <div id="tasks-content" class="text-xs text-slate-300 space-y-2.5">
+                        <p class="text-slate-500 italic">Execute the pipeline to inspect multi-agent task breakdown and worker assignments.</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                    <span>Taxonomy: 3 Subtasks</span>
+                    <span class="text-cyan-400 font-bold">$0 In-House Cap</span>
+                </div>
+            </div>
+
+            <!-- 3. Negotiations Card -->
+            <div class="glass-panel rounded-3xl p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                                <i data-lucide="scale" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Negotiations</h3>
+                                <p class="text-[11px] text-slate-400">1-Round Counter-Offer Protocol</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/25" id="neg-badge">BARGAINING</span>
+                    </div>
+
+                    <div id="negotiations-content" class="text-xs text-slate-300 space-y-2.5">
+                        <p class="text-slate-500 italic">Execute the pipeline to see provider bidding, counter-offers, and walk-away thresholds.</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                    <span>Protocol: 1-Round Ceiling Limit</span>
+                    <span class="text-emerald-400 font-bold">Walk-Away Shield</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             SECURITY SWARM THREAT INTERCEPTION MATRIX
+             ══════════════════════════════════════════════════════════════ -->
+        <div id="attack-section-anchor"></div>
+        <div class="glass-panel rounded-3xl p-5 sm:p-7 shadow-2xl border-rose-500/30" id="attack-section" style="display:none;">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/[0.08]">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-lg shadow-rose-500/10">
+                        <i data-lucide="shield-x" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white uppercase tracking-wide flex items-center gap-2.5">
+                            <span>Security Swarm Threat Interception Matrix</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">CRITICAL THREAT BLOCKED</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Multi-agent regex prompt-injection classifier &amp; on-chain address blocklist defense in action</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('attack-section').style.display='none'" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div id="attack-content" class="text-sm space-y-4"></div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             MARKET DISCLOSURE MODAL / DRAWER
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="glass-panel rounded-3xl p-5 sm:p-7 shadow-xl border-purple-500/30" id="disclosure-section" style="display:none;">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.08]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-white uppercase tracking-wider">Agent Market Architectural Disclosure</h3>
+                        <p class="text-xs text-slate-400">07-Agents Track Full Transparency — Documented live vs. simulated local capabilities</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('disclosure-section').style.display='none'" class="text-slate-400 hover:text-white p-1.5 rounded-lg glass-card">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div id="disclosure-content" class="text-xs space-y-2"></div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             REAL-TIME EXECUTION LOG CONSOLE
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="glass-panel rounded-3xl p-5 sm:p-6 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="flex gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+                    </div>
+                    <span class="text-xs font-mono text-slate-400 ml-2">nexusguard@near:~$ tail -f /var/log/pipeline.log</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="copyLog()" class="text-slate-400 hover:text-white text-xs flex items-center gap-1.5 transition-colors font-medium cursor-pointer">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span>Copy Log</span>
+                    </button>
+                    <button onclick="clearLog()" class="text-slate-400 hover:text-white text-xs flex items-center gap-1.5 transition-colors font-medium cursor-pointer">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Clear</span>
+                    </button>
+                </div>
+            </div>
+            <div id="log-content" class="bg-[#05070D] border border-white/[0.05] rounded-2xl p-4 text-xs font-mono text-slate-300 space-y-1.5 max-h-56 overflow-y-auto leading-relaxed shadow-inner">
+                <p class="text-slate-500">// NexusGuard Mission Control operational environment initialized.</p>
+                <p class="text-slate-500">// Function-Call Access Key scoped to escrow.nexusguard.testnet.</p>
+                <p class="text-slate-500">// Ready for autonomous pipeline execution or security swarm attack demonstration.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         FOOTER
+         ══════════════════════════════════════════════════════════════ -->
+    <footer class="border-t border-white/[0.06] mt-14 py-8 text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center text-xs font-black text-slate-950">N</div>
+                <span>NexusGuard v1.0 · Autonomous General Contractor on NEAR · MIT License</span>
+            </div>
+            <div class="flex items-center gap-5 text-slate-400">
+                <a href="/" class="hover:text-white transition-colors">Public Portal</a>
+                <a href="/api/ledger.csv" class="hover:text-white transition-colors">Ledger (CSV)</a>
+                <a href="https://market.near.ai" target="_blank" class="hover:text-white transition-colors">market.near.ai</a>
+                <a href="https://near.org" target="_blank" class="hover:text-white transition-colors">NEAR Protocol</a>
+                <a href="https://github.com" target="_blank" class="hover:text-white transition-colors flex items-center gap-1">
+                    <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Element -->
+    <div id="toast" class="fixed bottom-6 right-6 glass-panel border border-cyan-500/40 px-4 py-3 rounded-2xl shadow-2xl text-xs text-white hidden z-50 flex items-center gap-2.5 slide-in">
+        <i data-lucide="check-circle" class="w-4 h-4 text-cyan-400" id="toast-icon"></i>
+        <span id="toast-msg">Notification</span>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         CLIENT-SIDE APPLICATION LOGIC
+         ══════════════════════════════════════════════════════════════ -->
+    <script>
+        const API = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadPolicy(true);
+
+            // Keyboard shortcut: Cmd/Ctrl + Enter to trigger pipeline
+            document.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    runPipeline();
+                }
+            });
+        });
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            msgEl.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        function setStatus(text, type) {
+            const statusEl = document.getElementById('status-text');
+            if (statusEl) {
+                statusEl.title = text;
+                let label = text;
+                const lower = (text || '').toLowerCase();
+                if (lower.includes('completed') || lower.includes('settled')) {
+                    label = 'Settled';
+                } else if (lower.includes('executing') || lower.includes('procuring') || lower.includes('simulating')) {
+                    label = 'Running';
+                } else if (lower.includes('neutralized') || lower.includes('complete') || lower.includes('blocked')) {
+                    label = 'Guarded';
+                } else if (lower.includes('error') || type === 'error') {
+                    label = 'Error';
+                } else if (lower === 'ready') {
+                    label = 'Ready';
+                }
+                statusEl.textContent = label;
+            }
+            const dot = document.getElementById('status-dot');
+            if (dot) {
+                dot.className = 'status-dot ' + (type === 'ok' ? 'status-ok' : type === 'error' ? 'status-blocked' : 'status-pending');
+            }
+        }
+
+        function appendLog(msg) {
+            const el = document.getElementById('log-content');
+            const ts = new Date().toISOString().slice(11, 19);
+            const p = document.createElement('p');
+            p.textContent = `[${ts}] ${msg}`;
+            p.className = 'slide-in text-slate-300';
+            el.appendChild(p);
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-content').innerHTML = '<p class="text-slate-500">// Execution log cleared.</p>';
+        }
+
+        function copyLog() {
+            const text = document.getElementById('log-content').innerText;
+            navigator.clipboard.writeText(text);
+            showToast('Execution log copied to clipboard');
+        }
+
+        function copyText(text, label = 'Artifact') {
+            navigator.clipboard.writeText(text);
+            showToast(`${label} copied to clipboard!`);
+        }
+
+        function outcomeBadge(o) {
+            const config = {
+                'ACCEPTED_INITIAL': { cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', text: 'ACCEPTED INITIAL' },
+                'ACCEPTED_COUNTER': { cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30', text: 'ACCEPTED COUNTER' },
+                'WALKED_AWAY': { cls: 'bg-rose-500/15 text-rose-400 border-rose-500/30', text: 'WALKED AWAY' },
+            };
+            const c = config[o] || { cls: 'bg-slate-800 text-slate-300 border-slate-700', text: o };
+            return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${c.cls} inline-flex items-center gap-1">${c.text}</span>`;
+        }
+
+        function strategyBadge(s) {
+            const config = {
+                'SELF_BUILD': { cls: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30', text: 'SELF-BUILD ($0.00)' },
+                'BUY_AGENT_MARKET': { cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30', text: 'MARKET AGENT' },
+                'BUY_MICRO_BOUNTY': { cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30', text: 'CROSS-CHAIN BOUNTY' },
+            };
+            const c = config[s] || { cls: 'bg-slate-800 text-slate-300 border-slate-700', text: s };
+            return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${c.cls}">${c.text}</span>`;
+        }
+
+        const PRESETS = {
+            arbitrage: {
+                spec: "Build an automated cross-chain arbitrage trading bot between NEAR Ref Finance and Base Aerodrome. Implement reentrancy checks, slippage guards, and Telegram liquidation alert webhooks.",
+                budget: 35.00,
+            },
+            nft: {
+                spec: "Design a Web3 NFT game economy with dynamic royalty splitting, gasless player minting, and cross-chain inventory sync between NEAR and Base.",
+                budget: 50.00,
+            },
+            vault: {
+                spec: "Implement a decentralized yield lending vault on NEAR with automated collateral rebalancing, liquidation health factor monitors, and multi-sig admin pause controls.",
+                budget: 40.00,
+            },
+            default: {
+                spec: "Build a NEAR NEP-141 escrow smart contract with fund_escrow, release_escrow, cancel_escrow methods. Include a full security audit (static analysis, reentrancy checks) and UI/UX review with invoice validation. Total budget: $25.00 USDC.",
+                budget: 25.00,
+            },
+        };
+
+        function setPreset(type) {
+            const p = PRESETS[type];
+            if (p) {
+                document.getElementById('task-spec').value = p.spec;
+                document.getElementById('task-budget').value = p.budget.toFixed(2);
+                updateBudgetPreview(p.budget);
+                appendLog(`Preset applied: ${type.toUpperCase()} ($${p.budget.toFixed(2)} USDC)`);
+                showToast(`Applied preset: ${type.toUpperCase()}`);
+            }
+        }
+
+        function updateBudgetPreview(val) {
+            const b = parseFloat(val) || 25.0;
+            const t2 = (b * 0.30).toFixed(2);
+            const t3 = (b * 0.20).toFixed(2);
+            document.getElementById('hint-task2').innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-500"></span>TASK-02: Audit Swarm (~$${t2})`;
+            document.getElementById('hint-task3').innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span>TASK-03: Cross-Chain QA (~$${t3})`;
+            document.getElementById('badge-policy-cap').textContent = `$${b.toFixed(2)} Cap`;
+            document.getElementById('allocation-split-summary').textContent = `In-House: $0.00 · Audit: ~$${t2} · QA: ~$${t3} · Cap: $${b.toFixed(2)}`;
+        }
+
+        function animateStepper(step, pct) {
+            const stepper = document.getElementById('pipeline-stepper');
+            stepper.classList.remove('hidden');
+            document.getElementById('step-bar').style.width = pct + '%';
+            document.getElementById('step-percentage').textContent = pct + '%';
+            for (let i = 1; i <= 5; i++) {
+                const el = document.getElementById(`step-${i}`);
+                if (i <= step) {
+                    el.className = 'text-cyan-400 font-bold';
+                } else {
+                    el.className = 'text-slate-500';
+                }
+            }
+        }
+
+        async function runPipeline() {
+            setStatus('Pipeline executing...', 'pending');
+            appendLog('Triggered General Contractor pipeline run...');
+            const btn = document.getElementById('btn-pipeline');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Procuring &amp; Settling...</span>';
+            lucide.createIcons();
+
+            animateStepper(1, 20);
+
+            const specInput = document.getElementById('task-spec').value.trim();
+            const budgetInput = parseFloat(document.getElementById('task-budget').value) || 25.00;
+
+            try {
+                setTimeout(() => animateStepper(2, 40), 250);
+                setTimeout(() => animateStepper(3, 65), 550);
+
+                const resp = await fetch(API + '/api/pipeline/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        specification: specInput,
+                        budget_usdc: budgetInput,
+                    }),
+                });
+                const data = await resp.json();
+
+                animateStepper(4, 85);
+                setTimeout(() => animateStepper(5, 100), 200);
+
+                // 1. Render Policy Card
+                const wp = data.wallet_policy;
+                const pc = document.getElementById('policy-content');
+                pc.innerHTML = `
+                    <div class="space-y-2 bg-[#060A12] p-3.5 rounded-2xl border border-white/[0.05]">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Account:</span>
+                            <span class="text-cyan-400 font-mono font-semibold">${wp.access_key.account_id}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Key Permission:</span>
+                            <span class="text-cyan-300 font-mono font-semibold">${wp.access_key.key_type}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Receiver Contract:</span>
+                            <span class="text-slate-200 font-mono truncate max-w-[150px]">${wp.access_key.scope.receiver_id}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Policy Budget Cap:</span>
+                            <span class="text-emerald-400 font-bold">${wp.constraints.budget_cap_usdc}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Co-Signature Gate:</span>
+                            <span class="text-amber-400 font-semibold">${wp.constraints.single_payout_human_approval_above}</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20 text-[11px] space-y-1">
+                        <p class="text-rose-400 font-bold flex items-center gap-1.5">
+                            <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                            Strictly Forbidden Privileged Actions:
+                        </p>
+                        <div class="space-y-0.5 text-rose-300/80 font-mono text-[10px]">
+                            ${wp.constraints.agent_CANNOT_do_without_human.map(c => `<div>✗ ${c}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+
+                // Update RPC telemetry pill
+                if (wp.access_key.near_testnet_rpc && wp.access_key.near_testnet_rpc.latest_block_height) {
+                    document.getElementById('rpc-pill').textContent = `Block #${wp.access_key.near_testnet_rpc.latest_block_height}`;
+                }
+
+                // 2. Render Tasks Card
+                const tc = document.getElementById('tasks-content');
+                tc.innerHTML = data.decomposition.tasks.map(t => `
+                    <div class="p-3.5 bg-[#060A12] rounded-2xl border border-white/[0.05] slide-in space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-cyan-400 font-bold text-xs">${t.task_id}</span>
+                            ${strategyBadge(t.strategy)}
+                        </div>
+                        <p class="text-xs text-white font-semibold leading-snug">${t.title}</p>
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1.5 border-t border-white/[0.04]">
+                            <span class="flex items-center gap-1.5 text-slate-300"><i data-lucide="bot" class="w-3.5 h-3.5 text-slate-500"></i>${t.assigned_to}</span>
+                            <span class="font-mono text-emerald-400 font-bold">$${t.budget_usdc.toFixed(2)} USDC</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                // 3. Render Negotiations Card
+                const nc = document.getElementById('negotiations-content');
+                nc.innerHTML = data.negotiations.map(n => `
+                    <div class="p-3.5 bg-[#060A12] rounded-2xl border border-white/[0.05] slide-in space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-slate-400 text-xs font-semibold">${n.subtask_id}</span>
+                            ${outcomeBadge(n.outcome)}
+                        </div>
+                        <p class="text-xs text-white font-semibold">${n.provider_id}</p>
+                        <div class="flex items-center justify-between text-xs text-slate-300 font-mono">
+                            <span class="text-slate-500">Quote / Settled:</span>
+                            <span>$${n.initial_quote.toFixed(2)} ➔ ${n.final_price != null ? '<span class="text-emerald-400 font-bold">$' + n.final_price.toFixed(2) + '</span>' : '<span class="text-rose-400 font-bold">WALKED</span>'}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 bg-white/[0.02] p-2 rounded-xl border border-white/[0.04] leading-relaxed">${n.summary}</p>
+                    </div>
+                `).join('');
+
+                // 4. Render Settlements Table
+                const sc = document.getElementById('settlements-content');
+                if (data.settlements && data.settlements.length) {
+                    sc.innerHTML = `
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-left text-slate-400 border-b border-white/[0.08] font-mono uppercase text-[10px] tracking-wider">
+                                    <th class="py-3 pr-3">Receipt ID</th>
+                                    <th class="py-3 pr-3">Task ID</th>
+                                    <th class="py-3 pr-3">Recipient Address</th>
+                                    <th class="py-3 pr-3">Chain</th>
+                                    <th class="py-3 pr-3 text-right">Settled Amount</th>
+                                    <th class="py-3 pr-3 text-center">QA Verification</th>
+                                    <th class="py-3">NEAR Intents Quote ID</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/[0.04]">
+                                ${data.settlements.map(s => `
+                                    <tr class="hover:bg-white/[0.02] transition-colors slide-in">
+                                        <td class="py-3 pr-3 font-mono text-cyan-400 font-bold flex items-center gap-1.5">
+                                            <span>${s.receipt_id}</span>
+                                            <button onclick="copyText('${s.receipt_id}', 'Receipt ID')" class="text-slate-500 hover:text-cyan-400 transition-colors cursor-pointer">
+                                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </td>
+                                        <td class="py-3 pr-3">
+                                            <span class="px-2 py-0.5 rounded font-mono text-[10px] bg-slate-800 text-slate-300 font-semibold">${s.task_id}</span>
+                                        </td>
+                                        <td class="py-3 pr-3 text-slate-300 font-mono text-[11px]">${s.recipient_address}</td>
+                                        <td class="py-3 pr-3">
+                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${s.recipient_chain === 'base' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'}">
+                                                ${s.recipient_chain.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 pr-3 text-right font-mono font-bold text-emerald-400 text-sm">$${s.price_usdc.toFixed(2)}</td>
+                                        <td class="py-3 pr-3 text-center">
+                                            ${s.verification_passed ? '<span class="text-emerald-400 font-bold inline-flex items-center gap-1">✅ PASS</span>' : '<span class="text-rose-400 font-bold">❌ FAIL</span>'}
+                                        </td>
+                                        <td class="py-3 font-mono text-[11px] text-purple-300 flex items-center gap-1.5">
+                                            <span class="truncate max-w-[180px]">${s.intent_quote_id}</span>
+                                            <button onclick="copyText('${s.intent_quote_id}', 'Quote ID')" class="text-slate-500 hover:text-purple-400 transition-colors cursor-pointer">
+                                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>`;
+                }
+
+                // 5. Render Delivered Output Showcase
+                if (data.delivered_output) {
+                    const d = data.delivered_output;
+                    const dSection = document.getElementById('delivered-section');
+                    dSection.style.display = 'block';
+
+                    // Update Top Metrics Strip
+                    document.getElementById('metric-budget-spend').textContent = `$${d.total_spent_usdc.toFixed(2)} / $${d.total_budget_usdc.toFixed(2)}`;
+                    document.getElementById('metric-savings-note').textContent = `$${d.savings_usdc.toFixed(2)} Saved (${((d.savings_usdc / d.total_budget_usdc) * 100).toFixed(0)}%)`;
+
+                    const statsPill = document.getElementById('delivered-stats-pill');
+                    statsPill.innerHTML = `
+                        <span class="px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                            <i data-lucide="trending-down" class="w-4 h-4 text-emerald-400"></i>
+                            <span>Treasury Net Saved: $${d.savings_usdc.toFixed(2)} USDC</span>
+                        </span>
+                    `;
+
+                    const dContent = document.getElementById('delivered-content');
+                    dContent.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-[#060A12] rounded-2xl border border-white/[0.06] text-xs">
+                            <div>
+                                <span class="text-slate-500 uppercase tracking-wider text-[10px] font-bold">Project Goal:</span>
+                                <p class="text-white font-bold mt-1 text-sm">${d.project_title}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 uppercase tracking-wider text-[10px] font-bold">Treasury Spend vs. Cap:</span>
+                                <p class="text-emerald-400 font-bold mt-1 text-sm font-mono">$${d.total_spent_usdc.toFixed(2)} <span class="text-slate-500 text-xs font-normal">of</span> $${d.total_budget_usdc.toFixed(2)} USDC</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 uppercase tracking-wider text-[10px] font-bold">Capital Efficiency:</span>
+                                <p class="text-cyan-400 font-bold mt-1 text-sm font-mono">$${d.savings_usdc.toFixed(2)} Saved <span class="text-slate-500 text-xs font-normal">(${d.total_budget_usdc > 0 ? ((d.savings_usdc / d.total_budget_usdc) * 100).toFixed(0) : 0}% under budget)</span></p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-[#060A12] rounded-2xl border border-white/[0.06] text-xs space-y-1.5">
+                            <div class="flex items-center justify-between text-slate-300 font-bold mb-1">
+                                <span class="flex items-center gap-2 text-white">
+                                    <i data-lucide="file-check-2" class="w-4 h-4 text-cyan-400"></i>
+                                    Executive Delivery &amp; Architecture Synthesis
+                                </span>
+                                <span class="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">CRYPTOGRAPHIC AUDIT PASS</span>
+                            </div>
+                            <p class="text-slate-300 leading-relaxed">${d.architecture_summary}</p>
+                        </div>
+
+                        <div>
+                            <span class="text-xs text-slate-300 font-bold mb-3 block flex items-center gap-2">
+                                <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
+                                Verified Deliverable Artifacts (Worker Outputs with SHA-256 Verification):
+                            </span>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                ${d.deliverable_artifacts.map(a => `
+                                    <div class="p-4 bg-[#060A12] rounded-2xl border border-white/[0.06] slide-in text-xs flex flex-col justify-between space-y-3 shadow-lg">
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="font-mono text-cyan-400 font-bold text-xs">${a.task_id}</span>
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">${a.status}</span>
+                                            </div>
+                                            <p class="text-white font-bold mb-2 leading-snug">${a.title}</p>
+                                            <pre class="bg-black/75 p-3 rounded-xl text-[11px] font-mono text-slate-200 overflow-x-auto max-h-40 leading-tight whitespace-pre-wrap border border-white/[0.05]">${a.artifact_preview}</pre>
+                                        </div>
+                                        <div class="pt-2.5 border-t border-white/[0.05] flex items-center justify-between text-[10px] font-mono text-slate-400">
+                                            <span class="truncate max-w-[170px]" title="${a.deliverable_hash}">Hash: ${a.deliverable_hash}</span>
+                                            <button onclick="copyText('${a.deliverable_hash}', 'Hash')" class="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer" title="Copy SHA-256 Hash">
+                                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Run log
+                if (data.run_log) {
+                    data.run_log.forEach(l => appendLog(`[${l.event}] ${l.message}`));
+                }
+
+                setStatus('Pipeline execution completed', 'ok');
+                showToast('General Contractor pipeline settled successfully!', 'success');
+                lucide.createIcons();
+            } catch (err) {
+                setStatus('Error in pipeline', 'error');
+                appendLog('Pipeline error: ' + err.message);
+                showToast('Error: ' + err.message, 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="play" class="w-4 h-4 fill-slate-950"></i><span>Execute Autonomous Pipeline (Dry-Run ⌘↵)</span>';
+            lucide.createIcons();
+        }
+
+        async function runAttackDemo() {
+            setStatus('Simulating Attack...', 'pending');
+            appendLog('Simulating poisoned prompt-injection & treasury drain attempt...');
+            const btn = document.getElementById('btn-attack');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Scanning Swarm...</span>';
+            lucide.createIcons();
+
+            try {
+                const resp = await fetch(API + '/api/attack/demo', { method: 'POST' });
+                const data = await resp.json();
+
+                const section = document.getElementById('attack-section');
+                section.style.display = 'block';
+
+                const ac = document.getElementById('attack-content');
+                const scenario = data.attack_scenario;
+                const attack = data.attack_result;
+                const incident = attack.incident_receipt;
+                const signals = attack.risk_report.signals || [];
+
+                document.getElementById('metric-incidents').textContent = '1 Attack Blocked';
+
+                ac.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Attack Scenario Card -->
+                        <div class="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-rose-400 font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                                    <i data-lucide="skull" class="w-4 h-4 text-rose-400"></i>
+                                    Malicious Attack Vector
+                                </h4>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">INTERCEPTED</span>
+                            </div>
+                            <div class="text-xs space-y-1 text-slate-300 pt-1">
+                                <p><span class="text-slate-500">Attacker Identity:</span> <span class="text-rose-300 font-mono font-bold">${scenario.attacker}</span></p>
+                                <p><span class="text-slate-500">Vector:</span> ${scenario.attack_vector}</p>
+                                <p><span class="text-slate-500">Unauthorized Drain Target:</span> <span class="font-mono text-rose-400 font-bold">$${scenario.target_amount_usdc.toFixed(2)} USDC</span> ➔ <span class="font-mono text-slate-400">${scenario.target_address.substring(0, 16)}...</span></p>
+                            </div>
+                            <div class="mt-3 pt-2.5 border-t border-rose-500/20">
+                                <p class="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
+                                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                    TREASURY DRAIN HALTED BY SECURITY SWARM
+                                </p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Threat Level: <span class="text-rose-400 font-bold">${attack.risk_report.overall_risk}</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Signals Triggered -->
+                        <div class="p-4 bg-[#060A12] border border-white/[0.06] rounded-2xl space-y-2">
+                            <h4 class="text-amber-400 font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                                Regex Signatures &amp; Swarm Flags (${signals.length} Triggered)
+                            </h4>
+                            <div class="space-y-1.5 max-h-40 overflow-y-auto">
+                                ${signals.map(s => `
+                                    <div class="text-[11px] p-2 bg-rose-500/10 rounded-xl border-l-2 border-rose-500 flex items-start gap-2">
+                                        <span class="text-rose-400 font-bold uppercase text-[9px] px-1.5 py-0.5 bg-rose-500/20 rounded">${s.severity}</span>
+                                        <span class="text-slate-200 font-mono">${s.description}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    ${incident ? `
+                    <!-- Incident Receipt -->
+                    <div class="p-4 bg-[#060A12] border border-cyan-500/30 rounded-2xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-cyan-400 font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                                <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                                Cryptographic Incident Receipt
+                            </h4>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">${incident.incident_id}</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1 text-slate-300">
+                            <div><span class="text-slate-500">Threat Classification:</span> <p class="text-rose-400 font-bold">${incident.threat_type}</p></div>
+                            <div><span class="text-slate-500">Protected Capital:</span> <p class="text-emerald-400 font-mono font-bold">$${incident.amount_usdc.toFixed(2)} USDC</p></div>
+                            <div><span class="text-slate-500">Risk Severity:</span> <p class="text-rose-400 font-bold">${incident.risk_level}</p></div>
+                            <div><span class="text-slate-500">Action Taken:</span> <p class="text-cyan-400 font-bold">DRAIN BLOCKED &amp; LOGGED</p></div>
+                        </div>
+                        <div class="pt-2 border-t border-white/[0.05] flex items-center justify-between text-[11px] font-mono text-cyan-300">
+                            <span class="truncate max-w-[500px]">SHA-256 Proof: ${incident.receipt_hash}</span>
+                            <button onclick="copyText('${incident.receipt_hash}', 'Incident Hash')" class="text-slate-400 hover:text-white cursor-pointer" title="Copy Hash">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>` : ''}
+
+                    <!-- Legitimate Comparison -->
+                    <div class="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <h4 class="text-emerald-400 font-bold text-xs flex items-center gap-1.5">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                Legitimate Worker Transaction Comparison:
+                            </h4>
+                            <p class="text-xs text-slate-300 mt-0.5">Worker: <span class="font-mono text-cyan-300 font-bold">trusted-builder.near</span> · Escrow Payout: $6.45 USDC</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            ${data.legitimate_comparison.blocked ? 'BLOCKED' : '✅ ALLOWED THROUGH'}
+                        </span>
+                    </div>
+                `;
+
+                setStatus('Attack simulation complete — threat neutralized', 'ok');
+                appendLog('Security Swarm blocked unauthorized drain — zero capital loss!');
+                showToast('Attack intercepted & verified', 'success');
+                lucide.createIcons();
+            } catch (err) {
+                setStatus('Error in attack simulation', 'error');
+                appendLog('Attack simulation error: ' + err.message);
+                showToast('Error: ' + err.message, 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="shield-alert" class="w-4 h-4"></i><span>Simulate Attack &amp; Drain</span>';
+            lucide.createIcons();
+        }
+
+        async function loadPolicy(silent = false) {
+            try {
+                const resp = await fetch(API + '/api/policy');
+                const data = await resp.json();
+                const pc = document.getElementById('policy-content');
+                pc.innerHTML = `
+                    <div class="space-y-2 bg-[#060A12] p-3.5 rounded-2xl border border-white/[0.05]">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Account:</span>
+                            <span class="text-cyan-400 font-mono font-bold">${data.access_key.account_id}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Key Permission:</span>
+                            <span class="text-cyan-300 font-mono font-bold">${data.access_key.key_type}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Receiver Contract:</span>
+                            <span class="text-slate-200 font-mono truncate max-w-[150px]">${data.access_key.scope.receiver_id}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Policy Budget Cap:</span>
+                            <span class="text-emerald-400 font-bold">${data.constraints.budget_cap_usdc}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Co-Signature Gate:</span>
+                            <span class="text-amber-400 font-semibold">${data.constraints.single_payout_human_approval_above}</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20 text-[11px] space-y-1">
+                        <p class="text-rose-400 font-bold flex items-center gap-1.5">
+                            <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+                            Strictly Forbidden Privileged Actions:
+                        </p>
+                        <div class="space-y-0.5 text-rose-300/80 font-mono text-[10px]">
+                            ${data.constraints.agent_CANNOT_do_without_human.map(c => `<div>✗ ${c}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+
+                if (data.access_key.near_testnet_rpc && data.access_key.near_testnet_rpc.latest_block_height) {
+                    document.getElementById('rpc-pill').textContent = `Block #${data.access_key.near_testnet_rpc.latest_block_height}`;
+                }
+
+                if (!silent) {
+                    appendLog('Verified policy constraints from NEAR runtime');
+                    showToast('Wallet policy verified');
+                }
+                lucide.createIcons();
+            } catch (err) {
+                if (!silent) appendLog('Error loading policy: ' + err.message);
+            }
+        }
+
+        async function loadDisclosure() {
+            try {
+                const resp = await fetch(API + '/api/disclosure');
+                const data = await resp.json();
+                const section = document.getElementById('disclosure-section');
+                section.style.display = 'block';
+                const dc = document.getElementById('disclosure-content');
+                dc.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 slide-in">
+                        ${Object.entries(data).map(([k, v]) => `
+                            <div class="p-3.5 bg-[#060A12] rounded-2xl border border-purple-500/25 space-y-1.5 shadow-md">
+                                <p class="text-[10px] font-mono uppercase text-purple-400 font-extrabold tracking-wider">${k.replace(/_/g, ' ')}</p>
+                                <p class="text-xs text-slate-300 leading-relaxed">${v}</p>
+                            </div>
+                        `).join('')}
+                    </div>`;
+                appendLog('Loaded 07-agents track architectural disclosure');
+                showToast('Agent disclosure opened');
+                lucide.createIcons();
+            } catch (err) {
+                appendLog('Error loading disclosure: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
