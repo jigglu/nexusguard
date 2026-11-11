@@ -308,21 +308,40 @@ class NexusGuardPipeline:
     def _export_receipts(self) -> None:
         """Export receipts to receipts.json."""
         path = self.output_dir / "receipts.json"
-        with open(path, "w") as f:
-            json.dump(
-                [r.to_dict() for r in self.receipts],
-                f,
-                indent=2,
-            )
+        try:
+            with open(path, "w") as f:
+                json.dump(
+                    [r.to_dict() for r in self.receipts],
+                    f,
+                    indent=2,
+                )
+        except OSError:
+            tmp_path = Path("/tmp/receipts.json")
+            try:
+                with open(tmp_path, "w") as f:
+                    json.dump([r.to_dict() for r in self.receipts], f, indent=2)
+            except OSError:
+                pass
 
     def _export_ledger(self) -> None:
         """Export accounting ledger to CSV."""
         path = self.output_dir / "accounting_ledger.csv"
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(SettlementReceipt.csv_header())
-            for r in self.receipts:
-                writer.writerow(r.to_csv_row())
+        try:
+            with open(path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(SettlementReceipt.csv_header())
+                for r in self.receipts:
+                    writer.writerow(r.to_csv_row())
+        except OSError:
+            tmp_path = Path("/tmp/accounting_ledger.csv")
+            try:
+                with open(tmp_path, "w", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(SettlementReceipt.csv_header())
+                    for r in self.receipts:
+                        writer.writerow(r.to_csv_row())
+            except OSError:
+                pass
 
     def _log(self, event: str, message: str) -> None:
         self._run_log.append({

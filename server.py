@@ -244,16 +244,36 @@ async def get_negotiations():
 
 @app.get("/api/ledger.csv")
 async def download_ledger():
-    """Serve accounting_ledger.csv as a downloadable file."""
+    """Serve accounting_ledger.csv as a downloadable file (disk, /tmp, or in-memory)."""
+    import csv
+    import io
+    from fastapi.responses import Response
+
     ledger_path = Path(__file__).parent / "accounting_ledger.csv"
-    # If ledger doesn't exist yet, run the pipeline first
-    if not ledger_path.exists():
-        pipeline = NexusGuardPipeline()
-        pipeline.run()
-    return FileResponse(
-        path=str(ledger_path),
+    if ledger_path.exists():
+        csv_content = ledger_path.read_text()
+    else:
+        tmp_ledger = Path("/tmp/accounting_ledger.csv")
+        if tmp_ledger.exists():
+            csv_content = tmp_ledger.read_text()
+        else:
+            pipeline = NexusGuardPipeline()
+            pipeline.run()
+            if tmp_ledger.exists():
+                csv_content = tmp_ledger.read_text()
+            else:
+                from src.pipeline import SettlementReceipt
+                out = io.StringIO()
+                writer = csv.writer(out)
+                writer.writerow(SettlementReceipt.csv_header())
+                for r in pipeline.receipts:
+                    writer.writerow(r.to_csv_row())
+                csv_content = out.getvalue()
+
+    return Response(
+        content=csv_content,
         media_type="text/csv",
-        filename="nexusguard_accounting_ledger.csv",
+        headers={"Content-Disposition": 'attachment; filename="nexusguard_accounting_ledger.csv"'},
     )
 
 
